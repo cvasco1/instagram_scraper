@@ -220,25 +220,31 @@ async def obtener_comentarios_reales(page, caption):
 
         await page.wait_for_timeout(3000)
 
-        spans = page.locator("article span[dir='auto']")
+        html = await page.content()
 
-        total = await spans.count()
+        # Buscar comentarios dentro del JSON interno
 
-        for i in range(total):
+        textos = re.findall(
+            r'"text":"(.*?)"',
+            html
+        )
 
-            texto = await spans.nth(i).inner_text()
+        for texto in textos:
+
+            texto = texto.replace("\\n", " ")
+            texto = texto.replace("\\u00f3", "ó")
 
             texto = texto.strip()
 
+            # Evitar caption
             if texto == caption:
                 continue
 
-            if texto.startswith("@"):
-                continue
-
+            # Evitar textos muy cortos
             if len(texto) < 5:
                 continue
 
+            # Evitar duplicados
             if texto not in comentarios:
 
                 comentarios.append(texto)
