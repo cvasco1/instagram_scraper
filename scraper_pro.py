@@ -58,6 +58,33 @@ def descargar_archivo(url, filename):
 
 
 # =========================
+# CARGAR MÁS COMENTARIOS
+# =========================
+
+async def cargar_mas_comentarios(page):
+
+    try:
+
+        for _ in range(5):
+
+            botones = page.locator(
+                "text=Ver más comentarios"
+            )
+
+            if await botones.count() > 0:
+
+                await botones.first.click()
+
+                await page.wait_for_timeout(2000)
+
+            else:
+                break
+
+    except:
+        pass
+
+
+# =========================
 # EXTRAER MEDIA
 # =========================
 
@@ -70,8 +97,6 @@ async def obtener_media_real(page):
     html = await page.content()
 
     try:
-
-        # VIDEO
 
         videos = re.findall(
             r'"video_versions".*?"url":"(https:[^"]+)"',
@@ -89,9 +114,6 @@ async def obtener_media_real(page):
                     media_urls.append(v)
 
             return media_urls
-
-
-        # CARRUSEL
 
         carousel = re.findall(
             r'"carousel_media":\[(.*?)\]',
@@ -114,9 +136,6 @@ async def obtener_media_real(page):
                     media_urls.append(u)
 
             return media_urls
-
-
-        # IMAGEN SIMPLE
 
         simple_imgs = re.findall(
             r'"image_versions2".*?"url":"(https:[^"]+)"',
@@ -164,7 +183,6 @@ def parsear_texto(html):
             caption = cap.group(1)
             caption = caption.replace("\\n", " ")
 
-
         like = re.search(
             r'"like_count":(\d+)',
             html
@@ -173,7 +191,6 @@ def parsear_texto(html):
         if like:
             likes = int(like.group(1))
 
-
         com = re.search(
             r'"comment_count":(\d+)',
             html
@@ -181,7 +198,6 @@ def parsear_texto(html):
 
         if com:
             comentarios = int(com.group(1))
-
 
         date_match = re.search(
             r'"taken_at":(\d+)',
@@ -222,35 +238,48 @@ async def obtener_comentarios_reales(page, caption):
 
         html = await page.content()
 
-        # Buscar comentarios dentro del JSON interno
-
-        textos = re.findall(
-            r'"text":"(.*?)"',
-            html
+        bloques = re.findall(
+            r'"username":"(.*?)".*?"text":"(.*?)"',
+            html,
+            re.DOTALL
         )
 
-        for texto in textos:
+        for username, texto in bloques:
 
-            texto = texto.replace("\\n", " ")
-            texto = texto.replace("\\u00f3", "ó")
+            try:
 
-            texto = texto.strip()
+                texto = texto.replace("\\n", " ")
 
-            # Evitar caption
-            if texto == caption:
+                texto = texto.encode(
+                    "utf-16",
+                    "surrogatepass"
+                ).decode(
+                    "utf-16",
+                    "ignore"
+                )
+
+                texto = texto.strip()
+
+                if texto == caption:
+                    continue
+
+                if username.lower() == USERNAME.lower():
+                    continue
+
+                if len(texto) < 6:
+                    continue
+
+                comentario_final = f"{username}: {texto}"
+
+                if comentario_final not in comentarios:
+
+                    comentarios.append(comentario_final)
+
+                if len(comentarios) == 5:
+                    break
+
+            except:
                 continue
-
-            # Evitar textos muy cortos
-            if len(texto) < 5:
-                continue
-
-            # Evitar duplicados
-            if texto not in comentarios:
-
-                comentarios.append(texto)
-
-            if len(comentarios) >= 5:
-                break
 
     except Exception as e:
 
@@ -328,12 +357,18 @@ async def scrape_post(context, link, index):
 
     await page.wait_for_timeout(5000)
 
-    # 🔥 NUEVO — SCROLL PARA CARGAR COMENTARIOS
+    # Scroll inicial
 
-    for _ in range(6):
+    for _ in range(4):
 
         await page.mouse.wheel(0, 4000)
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(1500)
+
+    # 🔥 Cargar más comentarios
+
+    await cargar_mas_comentarios(page)
+
+    await page.wait_for_timeout(2000)
 
     html = await page.content()
 
@@ -344,11 +379,7 @@ async def scrape_post(context, link, index):
         fecha
     ) = parsear_texto(html)
 
-    # MEDIA
-
     media_urls = await obtener_media_real(page)
-
-    # COMENTARIOS
 
     comentarios_texto = await obtener_comentarios_reales(
         page,
@@ -474,7 +505,8 @@ async def scrape_instagram():
     with open(
         f"{DATA_DIR}/posts.json",
         "w",
-        encoding="utf-8"
+        encoding="utf-8",
+        errors="ignore"
     ) as f:
 
         json.dump(
