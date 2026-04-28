@@ -1,3 +1,178 @@
 # instagram_scraper
 # instagram_scraper
 # instagram_scraper
+Integrante: Cristian Vasco
+Desarrollo de Web Scraping sobre Instagram
+EXPLICACIÓN GENERAL DEL CÓDIGO
+
+En general, este código sirve para automatizar la recolección de datos desde Instagram. Lo hice usando Playwright porque permite simular un navegador real, lo cual es necesario para que Instagram cargue correctamente su contenido. Además, las expresiones regulares ayudan a encontrar datos específicos dentro del HTML, mientras que la librería requests permite descargar archivos multimedia como imágenes o videos.
+
+Este código se hizo usando Python. Básicamente, el programa entra al perfil de Instagram, busca algunas publicaciones, abre cada post y obtiene datos como el texto del post, cantidad de likes, comentarios, fecha y también descarga las imágenes o videos. Al final guarda toda esa información en archivos JSON y CSV para poder usarlos después.
+
+El programa funciona usando varias librerías que ayudan a hacer distintas tareas.
+
+Como primer paso se extrajeron las cookies con la extensión "Get cookies.txt LOCALLY", la cual nos permite exportar las cookies en un archivo txt. Este archivo lo colocamos dentro de la carpeta del proyecto.
+
+Como siguiente paso ejecutamos el script "convert_cookies.py", el cual toma el archivo txt generado anteriormente y convierte sus datos a formato JSON, que es más fácil de usar en scripts, APIs o automatizaciones. Como resultado se genera el archivo json que luego vamos a utilizar en el scraping.
+
+Luego de haber creado nuestro archivo json de las cookies, continuamos con la ejecución del script principal "scraper_pro.py", donde a continuación explico el funcionamiento del código.
+
+
+Primero: Importación de librerías necesarias
+
+Primero se importan las librerías necesarias para que el programa funcione correctamente.
+
+La librería asyncio se usa para ejecutar funciones asíncronas. Esto es necesario porque Playwright trabaja con funciones async, lo que permite que el programa haga varias cosas sin quedarse bloqueado esperando.
+
+La librería json se usa para leer y guardar archivos en formato JSON. En este caso se usa para cargar las cookies desde un archivo llamado cookies.json y también para guardar los resultados finales en un archivo posts.json.
+
+La librería os sirve para trabajar con carpetas y archivos. Se usa para crear las carpetas donde se guardarán los datos descargados, como imágenes y videos.
+
+La librería requests sirve para descargar archivos desde internet. En este código se usa para descargar las imágenes o videos que se encuentran en los posts.
+
+La librería re sirve para trabajar con expresiones regulares. Esto permite buscar partes específicas dentro del HTML de la página, como por ejemplo el caption, likes o comentarios.
+
+La librería csv se usa para crear archivos CSV. Esto permite guardar los datos en forma de tabla para poder abrirlos después en Excel.
+
+La librería datetime sirve para convertir números de tiempo en fechas normales que se puedan leer.
+
+Por último, se usa Playwright, que es la librería principal. Esta librería permite abrir un navegador automático, entrar a páginas web, hacer scroll y obtener el contenido HTML.
+
+
+Segundo: Configuración del programa
+
+En esta parte se definen algunas variables importantes.
+
+Primero está la variable USERNAME, que indica el perfil que se va a analizar. En este caso es "latriecu".
+
+Después está CANTIDAD_POSTS, que indica cuántos posts se quieren analizar. En este código está en 10, o sea que solo analizará los primeros 10 posts.
+
+También se define el archivo COOKIES_FILE, que contiene las cookies necesarias para entrar a Instagram sin tener que iniciar sesión manualmente.
+
+Luego se definen las carpetas donde se guardarán los datos. DATA_DIR es la carpeta principal y IMG_DIR es la carpeta donde se guardarán las imágenes o videos descargados.
+
+También se define la ruta del archivo CSV donde se guardarán los datos. Las carpetas se crean automáticamente si no existen.
+
+
+Tercero: Función de descarga de archivos
+
+Esta función sirve para descargar imágenes o videos desde una URL.
+
+Primero se define un User-Agent para que el servidor piense que la solicitud viene de un navegador real. Esto ayuda a evitar bloqueos por parte de la página.
+
+Luego se hace la solicitud a la URL usando requests.get y se establece un tiempo de espera de 30 segundos.
+
+Si la descarga funciona correctamente, se guarda el archivo en la carpeta indicada.
+
+Si ocurre algún error, se muestra un mensaje indicando que hubo un problema en la descarga.
+
+
+Cuarto: Función para carga de comentarios
+
+Esta función se usa para hacer clic en el botón "Ver más comentarios" dentro de un post.
+
+Se intenta hacer clic varias veces para que se carguen más comentarios.
+
+Si ya no aparece el botón, el programa deja de intentar.
+
+Esto permite que el programa obtenga más comentarios antes de analizarlos. También se controlan los tiempos de espera para que el sistema no detecte muchas acciones seguidas y evitar ser detectado como un bot.
+
+
+Quinto: Función para obtener imágenes y video
+
+Esta función sirve para obtener las URLs reales de las imágenes o videos que tiene un post.
+
+Primero espera unos segundos para que la página cargue bien y luego obtiene todo el HTML del post usando page.content(). Ese HTML contiene los enlaces donde están las imágenes o videos.
+
+Después busca primero si el post tiene video, usando expresiones regulares para encontrar la URL dentro del HTML. Si encuentra videos, guarda sus enlaces en una lista.
+
+Si no encuentra videos, entonces revisa si el post es un carrusel, es decir, cuando hay varias imágenes en un mismo post. Si encuentra varias URLs, las guarda en la lista.
+
+Si tampoco encuentra carrusel, busca una imagen simple, que es cuando el post tiene solo una imagen.
+
+Cada URL encontrada se limpia para que quede en formato correcto y también se verifica que no se repita.
+
+Al final, la función devuelve una lista con todas las URLs encontradas, que luego se usan para descargar las imágenes o videos del post.
+
+
+Sexto: Extraer texto del post
+
+Esta función sirve para extraer la información básica del post, como el texto, likes, comentarios y la fecha.
+
+Primero recibe el HTML del post, que contiene toda la información interna de la publicación.
+
+Luego usa expresiones regulares para buscar el caption, que es el texto que aparece en la descripción del post.
+
+Después busca la cantidad de likes, encontrando el número dentro del HTML.
+
+También busca la cantidad de comentarios y la fecha del post, que aparece como un número llamado timestamp.
+
+Ese número se convierte en una fecha normal usando la librería datetime, para que sea más fácil de leer.
+
+Al final, la función devuelve los datos encontrados: caption, likes, comentarios y fecha.
+
+
+Séptimo: Obtener los comentarios
+
+Esta función sirve para obtener algunos comentarios reales del post que hacen los usuarios.
+
+Primero espera unos segundos para que los comentarios carguen bien y luego obtiene el HTML del post.
+
+Después usa expresiones regulares para buscar los nombres de usuario y textos de comentarios.
+
+Luego limpia los comentarios eliminando saltos de línea y caracteres extraños.
+
+También se evita guardar comentarios que sean iguales al caption del post o que sean del mismo dueño del perfil.
+
+Además, se revisa que los comentarios no se repitan y que tengan un tamaño mínimo.
+
+Al final, la función guarda solo los primeros 5 comentarios encontrados y los devuelve en una lista.
+
+
+Octavo: Scroll y obtención de links
+
+Esta función sirve para hacer scroll automático en el perfil de Instagram para que se carguen más publicaciones.
+
+Esto es necesario porque Instagram no muestra todos los posts de una sola vez, sino que los va cargando poco a poco cuando se hace scroll hacia abajo.
+
+De esta forma se asegura que haya suficientes publicaciones cargadas antes de empezar a obtener los enlaces de los posts.
+
+Luego se buscan todos los elementos que contienen enlaces hacia publicaciones. Cada enlace encontrado se convierte en un enlace completo agregando la URL principal de Instagram.
+
+Al final se guarda una lista con los links necesarios según la cantidad de posts definida.
+
+
+Noveno: Analizar cada post
+
+Esta función sirve para abrir cada publicación y obtener toda su información, por eso es una de las funciones más importantes.
+
+Primero abre el enlace del post en una nueva página del navegador y espera unos segundos para que todo cargue correctamente.
+
+Después hace scroll dentro del post para asegurarse de que se carguen las imágenes, videos y comentarios.
+
+Luego obtiene el HTML del post.
+
+Con ese HTML se llaman otras funciones: una para extraer el texto del post, otra para obtener las URLs de las imágenes o videos y otra para capturar comentarios.
+
+Después, si se encuentran imágenes o videos, el programa los descarga y los guarda en la carpeta correspondiente.
+
+Finalmente, toda la información del post se guarda en un diccionario y luego se usa para guardarla en los archivos JSON y CSV.
+
+
+Décimo: Función principal del programa
+
+Esta función es la que controla todo el proceso del scraper.
+
+Primero inicia Playwright y abre un navegador automático. Luego crea un contexto donde se cargan las cookies, lo que permite entrar a Instagram sin iniciar sesión manualmente.
+
+Después abre la página del perfil de Instagram usando el nombre de usuario definido.
+
+Luego hace scroll en el perfil para cargar suficientes publicaciones y obtiene los enlaces de los posts.
+
+Una vez que tiene los enlaces, el programa abre cada post uno por uno usando un ciclo y llama a la función que analiza cada publicación.
+
+Todos los datos que se obtienen se guardan en una lista llamada dataset.
+
+Cuando termina de analizar todos los posts, el navegador se cierra y los datos se exportan a un archivo JSON y también a un archivo CSV.
+
+Al final se muestra un mensaje indicando que todo el proceso terminó correctamente.
