@@ -13,7 +13,7 @@ from playwright.async_api import async_playwright
 # =========================
 
 USERNAME = "latriecu"
-CANTIDAD_POSTS = 5
+CANTIDAD_POSTS = 10
 
 COOKIES_FILE = "cookies.json"
 
@@ -98,6 +98,8 @@ async def obtener_media_real(page):
 
     try:
 
+        # VIDEO
+
         videos = re.findall(
             r'"video_versions".*?"url":"(https:[^"]+)"',
             html,
@@ -114,7 +116,7 @@ async def obtener_media_real(page):
                     media_urls.append(v)
 
             return media_urls
-
+        
         carousel = re.findall(
             r'"carousel_media":\[(.*?)\]',
             html,
@@ -136,7 +138,7 @@ async def obtener_media_real(page):
                     media_urls.append(u)
 
             return media_urls
-
+        
         simple_imgs = re.findall(
             r'"image_versions2".*?"url":"(https:[^"]+)"',
             html,
@@ -183,6 +185,7 @@ def parsear_texto(html):
             caption = cap.group(1)
             caption = caption.replace("\\n", " ")
 
+
         like = re.search(
             r'"like_count":(\d+)',
             html
@@ -191,6 +194,7 @@ def parsear_texto(html):
         if like:
             likes = int(like.group(1))
 
+
         com = re.search(
             r'"comment_count":(\d+)',
             html
@@ -198,6 +202,7 @@ def parsear_texto(html):
 
         if com:
             comentarios = int(com.group(1))
+
 
         date_match = re.search(
             r'"taken_at":(\d+)',
@@ -379,7 +384,11 @@ async def scrape_post(context, link, index):
         fecha
     ) = parsear_texto(html)
 
+    # MEDIA
+
     media_urls = await obtener_media_real(page)
+
+    # COMENTARIOS
 
     comentarios_texto = await obtener_comentarios_reales(
         page,
